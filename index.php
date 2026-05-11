@@ -1,10 +1,11 @@
 <?php
+session_start();
 require_once "src/config.php";
 require_once "src/db.php";
 
 $page = $_GET["page"] ?? "home";
 
-$allowed = ["home", "login"];
+$allowed = ["home", "login", "cadastrar_pet", "logout"];
 if (!in_array($page, $allowed)) {
     $page = "404";
 }
