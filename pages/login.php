@@ -1,20 +1,37 @@
 <?php
-// pages/login.php
+require_once "src/db.php";
+require_once "src/Gateway/FuncionarioGateway.php";
+require_once "src/Gateway/AdotanteGateway.php";
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $usuario_digitado = $_POST['usuario'] ?? '';
-    $senha_digitada = $_POST['senha'] ?? '';
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $usuario_digitado = trim($_POST["usuario"] ?? "");
+    $senha_digitada = $_POST["senha"] ?? "";
 
-    // Lógica de Validação: Usuário 'admin' e Senha '123'
-    if ($usuario_digitado === "admin" && $senha_digitada === "123") {
-        $_SESSION['usuario_id'] = 1;
-        $_SESSION['usuario_nome'] = "admin"; // Nome que aparecerá no Header
-        
+    $funcionarioGateway = new FuncionarioGateway();
+    $funcionario = $funcionarioGateway->getByEmailAndSenha($usuario_digitado, $senha_digitada);
+
+    if ($funcionario) {
+        $_SESSION["usuario_id"] = $funcionario["Id_funcionario"];
+        $_SESSION["usuario_nome"] = $funcionario["Nome"];
+        $_SESSION["usuario_tipo"] = "funcionario";
+
         header("Location: index.php?page=home");
         exit();
-    } else {
-        $erro = "Usuário ou senha incorretos!";
     }
+
+    $adotanteGateway = new AdotanteGateway();
+    $adotante = $adotanteGateway->getByEmailAndSenha($usuario_digitado, $senha_digitada);
+
+    if ($adotante) {
+        $_SESSION["usuario_id"] = $adotante["Id_adotante"];
+        $_SESSION["usuario_nome"] = $adotante["Nome"];
+        $_SESSION["usuario_tipo"] = "adotante";
+
+        header("Location: index.php?page=listar_pets");
+        exit();
+    }
+
+    $erro = "E-mail ou senha incorretos!";
 }
 ?>
 
@@ -25,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <h2 class="fw-bold mb-3 text-center">Login</h2>
                 <p class="text-muted text-center mb-4">Identifique-se para acessar</p>
 
-                <?php if(isset($erro)): ?>
+                <?php if (isset($erro)): ?>
                     <div class="alert alert-danger py-2 text-center" role="alert">
                         <small><?= $erro ?></small>
                     </div>
@@ -33,19 +50,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <form method="POST">
                     <div class="mb-3">
-                        <label class="form-label text-secondary small fw-bold">USUÁRIO</label>
-                        <input type="text" name="usuario" class="form-control form-control-lg" placeholder="Ex: admin" required>
+                        <label class="form-label text-secondary small fw-bold">E-MAIL</label>
+                        <input type="email" name="usuario" class="form-control form-control-lg" placeholder="Ex: ana@ong.com" required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label text-secondary small fw-bold">SENHA</label>
-                        <input type="password" name="senha" class="form-control form-control-lg" placeholder="Digite 123" required>
+                        <input type="password" name="senha" class="form-control form-control-lg" placeholder="Digite sua senha" required>
                     </div>
 
                     <button type="submit" class="btn btn-dark btn-lg w-100 shadow-sm mt-3" style="border-radius: 10px;">
                         Entrar no Sistema
                     </button>
                 </form>
+
+                <p class="text-center text-muted mt-4 mb-0">
+                    Ainda nao tem conta?
+                    <a href="?page=cadastro" class="text-dark fw-bold">Cadastre-se</a>
+                </p>
             </div>
         </div>
     </div>

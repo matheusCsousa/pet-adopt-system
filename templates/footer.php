@@ -1,4 +1,5 @@
-</div> <footer class="mt-5 py-4 border-top text-center text-muted" style="background: #fff;">
+</div>
+    <footer class="mt-auto py-4 border-top text-center text-muted" style="background: #fff;">
         <p class="mb-0">&copy; <?= date("Y") ?> Adote um Pet - Gestão de ONGs</p>
     </footer>
 

@@ -7,7 +7,7 @@
                     <div class="d-grid d-md-flex justify-content-md-start gap-3">
                         <a class="btn btn-adopt btn-lg shadow-sm" href="?page=listar_pets">Adotar Agora</a>
                         
-                        <?php if (isset($_SESSION['usuario_id'])): ?>
+                        <?php if (($_SESSION["usuario_tipo"] ?? "") === "funcionario"): ?>
                             <a class="btn btn-outline-custom btn-lg" href="?page=cadastrar_pet">Cadastrar Pet</a>
                         <?php endif; ?>
                     </div>

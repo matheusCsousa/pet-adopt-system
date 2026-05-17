@@ -11,10 +11,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        body { 
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
             background-color: #fdfbf9; 
             color: #333; 
             font-family: 'Inter', sans-serif; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-content {
+            flex: 1 0 auto;
+        }
+
+        footer {
+            flex-shrink: 0;
         }
 
         .navbar { 
@@ -97,6 +113,7 @@
         }
     </style>
 </head>
+<body>
 <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
         <a class="navbar-brand" href="?page=home">
@@ -108,11 +125,19 @@
             <a class="nav-link" href="?page=listar_pets">Ver Pets</a> 
 
             <?php if (isset($_SESSION['usuario_id'])): ?>
-                <a class="nav-link fw-bold text-dark" href="?page=cadastrar_pet">Cadastrar</a>
+                <?php if (($_SESSION["usuario_tipo"] ?? "") === "funcionario"): ?>
+                    <a class="nav-link fw-bold text-dark" href="?page=cadastrar_pet">Cadastrar</a>
+                    <a class="nav-link fw-bold text-dark" href="?page=validar_adocoes">Validar</a>
+                <?php elseif (($_SESSION["usuario_tipo"] ?? "") === "adotante"): ?>
+                    <a class="nav-link fw-bold text-dark" href="?page=minhas_adocoes">Minhas candidaturas</a>
+                <?php endif; ?>
+                <a class="nav-link" href="?page=perfil"><?= htmlspecialchars($_SESSION["usuario_nome"] ?? "") ?></a>
                 <a href="?page=logout" class="btn btn-outline-danger ms-2" style="border-radius: 10px; font-size: 0.8rem;">Sair</a>
             <?php else: ?>
+                <a href="?page=cadastro" class="nav-link">Cadastrar-se</a>
                 <a href="?page=login" class="btn btn-login ms-2">Login</a>
             <?php endif; ?>
         </div>
     </div>
 </nav>
+<div class="container page-content">

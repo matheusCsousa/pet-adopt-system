@@ -1,4 +1,5 @@
 <?php
-// Neutralizado para focar apenas na lógica PHP (sem banco agora)
-$pdo = null; 
-?>
+require_once __DIR__ . "/Database.php";
+
+$db = Database::getInstance();
+$pdo = $db->getConnection();
