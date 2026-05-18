@@ -40,7 +40,7 @@ CREATE TABLE Animal (
     Especie         VARCHAR(50) NOT NULL,
     Sexo            ENUM('M', 'F') NOT NULL,
     Porte           ENUM('Pequeno', 'Medio', 'Grande') NOT NULL,
-    Status          ENUM('Disponivel', 'Em_adocao', 'Adotado', 'Em_tratamento') NOT NULL DEFAULT 'Disponivel',
+    Status          ENUM('Cadastrado', 'Disponivel', 'Em_adocao', 'Adotado', 'Em_tratamento') NOT NULL DEFAULT 'Cadastrado',
     Data_entrada    DATE NOT NULL,
     Data_saida      DATE,
     fk_Abrigo_Id_abrigo INT NOT NULL,
@@ -50,7 +50,9 @@ CREATE TABLE Animal (
 -- FOTO
 CREATE TABLE Foto (
     Id_foto             INT AUTO_INCREMENT PRIMARY KEY,
-    URL_foto            VARCHAR(300) NOT NULL,
+    URL_foto            VARCHAR(300),
+    Tipo_mime           VARCHAR(100),
+    Dados               LONGBLOB,
     Is_principal        BOOLEAN NOT NULL DEFAULT FALSE,
     fk_Animal_Id_animal INT NOT NULL,
     FOREIGN KEY (fk_Animal_Id_animal) REFERENCES Animal(Id_animal)

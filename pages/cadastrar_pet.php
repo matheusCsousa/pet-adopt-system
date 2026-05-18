@@ -3,11 +3,14 @@ require_once "src/db.php";
 require_once "src/Gateway/AnimalGateway.php";
 require_once "src/Gateway/FotoGateway.php";
 require_once "src/Gateway/AbrigoGateway.php";
+require_once "src/Gateway/VacinaGateway.php";
 
 exigirFuncionario();
 
 $abrigoGateway = new AbrigoGateway();
 $abrigos = $abrigoGateway->getAll();
+$vacinaGateway = new VacinaGateway();
+$vacinas = $vacinaGateway->getAll();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nome = $_POST["nome"] ?? "";
@@ -17,12 +20,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $porte = $_POST["porte"] ?? "Medio";
     $abrigo_id = $_POST["abrigo_id"] ?? "";
 
-    if (isset($_FILES["foto"]) && $_FILES["foto"]["error"] === 0) {
-        $extensao = pathinfo($_FILES["foto"]["name"], PATHINFO_EXTENSION);
-        $novoNome = uniqid() . "." . $extensao;
-        $destino = "uploads/" . $novoNome;
+    if (isset($_FILES["fotos"]) && is_array($_FILES["fotos"]["error"])) {
+        $fotosValidas = [];
 
-        if (move_uploaded_file($_FILES["foto"]["tmp_name"], $destino)) {
+        foreach ($_FILES["fotos"]["error"] as $indice => $erroUpload) {
+            if ($erroUpload !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $arquivoTemporario = $_FILES["fotos"]["tmp_name"][$indice];
+            $tipoMime = function_exists("mime_content_type")
+                ? mime_content_type($arquivoTemporario)
+                : ($_FILES["fotos"]["type"][$indice] ?? "");
+            $dadosFoto = file_get_contents($arquivoTemporario);
+
+            if ($dadosFoto !== false && is_string($tipoMime) && strpos($tipoMime, "image/") === 0) {
+                $fotosValidas[] = [
+                    "nome_arquivo" => $_FILES["fotos"]["name"][$indice],
+                    "tipo_mime" => $tipoMime,
+                    "dados" => $dadosFoto,
+                ];
+            }
+        }
+
+        if (count($fotosValidas) > 0) {
             try {
                 $animalGateway = new AnimalGateway();
                 $id_animal = $animalGateway->create([
@@ -31,22 +52,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     "raca" => $raca,
                     "sexo" => $sexo,
                     "porte" => $porte,
+                    "status" => "Cadastrado",
                     "fk_abrigo" => $abrigo_id,
                 ]);
 
                 $fotoGateway = new FotoGateway();
-                $fotoGateway->create([
-                    "url_foto" => "uploads/" . $novoNome,
-                    "is_principal" => true,
-                    "fk_animal" => $id_animal,
-                ]);
 
-                $sucesso = "O pet <strong>$nome</strong> foi registrado com sucesso!";
+                foreach ($fotosValidas as $indice => $foto) {
+                    $fotoGateway->create([
+                        "nome_arquivo" => $foto["nome_arquivo"],
+                        "tipo_mime" => $foto["tipo_mime"],
+                        "dados" => $foto["dados"],
+                        "is_principal" => $indice === 0,
+                        "fk_animal" => $id_animal,
+                    ]);
+                }
+
+                $vacinaGateway->applyManyToAnimal(
+                    $id_animal,
+                    $_POST["vacina_id"] ?? [],
+                    $_POST["data_aplicacao"] ?? [],
+                    $_POST["proxima_dose"] ?? []
+                );
+
+                $sucesso = "O pet <strong>$nome</strong> foi registrado no banco de dados. Para aparecer aos adotantes, publique em Anunciar.";
             } catch (Exception $e) {
                 $erro = "Erro ao salvar no banco de dados: " . $e->getMessage();
             }
         } else {
-            $erro = "Ops! Não conseguimos salvar a foto.";
+            $erro = "Por favor, selecione pelo menos uma imagem valida.";
         }
     } else {
         $erro = "Por favor, selecione uma foto do pet.";
@@ -61,8 +95,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 <div class="text-center mb-5">
                     <span style="font-size: 3rem;">🐾</span>
-                    <h2 class="fw-bold mt-2">Novo Cadastro</h2>
-                    <p class="text-muted">Preencha as informações para anunciar o pet</p>
+                    <h2 class="fw-bold mt-2">Cadastrar Pet</h2>
+                    <p class="text-muted">Registre o pet no banco de dados interno</p>
                 </div>
 
                 <?php if (isset($sucesso)): ?>
@@ -132,12 +166,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
 
                         <div class="col-md-12 mb-5">
-                            <label class="form-label fw-bold small text-uppercase text-secondary">Foto de Perfil</label>
+                            <label class="form-label fw-bold small text-uppercase text-secondary">Fotos do Pet</label>
                             <div class="input-group">
-                                <input type="file" name="foto" class="form-control border-light-subtle"
-                                       id="inputGroupFile02" accept="image/*" required>
+                                <input type="file" name="fotos[]" class="form-control border-light-subtle"
+                                       id="inputGroupFile02" accept="image/*" multiple required>
                             </div>
-                            <div class="form-text mt-2">Escolha uma foto bem bonita para ajudar na adoção!</div>
+                            <div class="form-text mt-2">Escolha uma ou mais fotos. A primeira será a foto principal.</div>
+                        </div>
+
+                        <div class="col-md-12 mb-5">
+                            <label class="form-label fw-bold small text-uppercase text-secondary">Vacinas</label>
+                            <?php for ($i = 0; $i < 3; $i++): ?>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-5">
+                                        <select name="vacina_id[]" class="form-select border-light-subtle">
+                                            <option value="">Selecionar vacina</option>
+                                            <?php foreach ($vacinas as $vacina): ?>
+                                                <option value="<?= (int) $vacina["Id_vacina"] ?>"><?= htmlspecialchars($vacina["Nome"]) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="date" name="data_aplicacao[]" class="form-control border-light-subtle">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="date" name="proxima_dose[]" class="form-control border-light-subtle">
+                                    </div>
+                                </div>
+                            <?php endfor; ?>
+                            <div class="form-text mt-2">Preencha apenas as vacinas já aplicadas. A última data é a próxima dose.</div>
                         </div>
                     </div>
 
@@ -146,7 +203,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             Cancelar
                         </a>
                         <button type="submit" class="btn btn-dark w-50 py-3 fw-bold shadow" style="border-radius: 10px;">
-                            Salvar Cadastro
+                            Salvar Pet
                         </button>
                     </div>
 

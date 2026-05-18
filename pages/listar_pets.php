@@ -29,9 +29,11 @@ $total_pets = count($pets);
         <?php foreach ($pets as $pet): ?>
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-                    <?php $foto = !empty($pet["foto_principal"])
-                        ? $pet["foto_principal"]
-                        : "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=500&q=80"; ?>
+                    <?php $foto = !empty($pet["foto_principal_id"])
+                        ? "foto.php?id=" . (int) $pet["foto_principal_id"]
+                        : (!empty($pet["foto_principal"])
+                            ? $pet["foto_principal"]
+                            : "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=500&q=80"); ?>
                     <img src="<?= $foto ?>" class="card-img-top" style="height: 250px; object-fit: cover;" alt="<?= htmlspecialchars(
     $pet["Nome"],
 ) ?>">

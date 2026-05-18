@@ -2,8 +2,10 @@
 require_once "src/db.php";
 require_once "src/Gateway/AnimalGateway.php";
 require_once "src/Gateway/AdocaoGateway.php";
+require_once "src/Gateway/FotoGateway.php";
 
 $animalGateway = new AnimalGateway();
+$fotoGateway = new FotoGateway();
 $animalId = (int) ($_GET["id"] ?? $_POST["animal_id"] ?? 0);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["acao"] ?? "") === "adotar") {
@@ -32,10 +34,13 @@ if (!$pet) {
     exit();
 }
 
-$foto = !empty($pet["foto_principal"])
-    ? $pet["foto_principal"]
-    : "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=900&q=80";
+$foto = !empty($pet["foto_principal_id"])
+    ? "foto.php?id=" . (int) $pet["foto_principal_id"]
+    : (!empty($pet["foto_principal"])
+        ? $pet["foto_principal"]
+        : "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=900&q=80");
 $vacinas = $animalGateway->getVacinasByAnimal($animalId);
+$fotos = $fotoGateway->getByAnimal($animalId);
 $podeSolicitarAdocao = in_array($pet["Status"], ["Disponivel", "Em_adocao"]);
 $solicitacaoAtual = null;
 
@@ -62,7 +67,30 @@ if (usuarioAdotante()) {
 
     <div class="row g-4 align-items-start">
         <div class="col-lg-6">
-            <img src="<?= htmlspecialchars($foto) ?>" class="img-fluid shadow-sm w-100" style="height: 520px; object-fit: cover; border-radius: 18px;" alt="<?= htmlspecialchars($pet["Nome"]) ?>">
+            <?php if (count($fotos) > 1): ?>
+                <div id="petFotosCarousel" class="carousel slide shadow-sm" data-bs-ride="carousel" style="border-radius: 18px; overflow: hidden;">
+                    <div class="carousel-inner">
+                        <?php foreach ($fotos as $indice => $fotoItem): ?>
+                            <?php
+                                $fotoUrl = !empty($fotoItem["Dados"])
+                                    ? "foto.php?id=" . (int) $fotoItem["Id_foto"]
+                                    : $fotoItem["URL_foto"];
+                            ?>
+                            <div class="carousel-item <?= $indice === 0 ? "active" : "" ?>">
+                                <img src="<?= htmlspecialchars($fotoUrl) ?>" class="d-block w-100" style="height: 520px; object-fit: cover;" alt="<?= htmlspecialchars($pet["Nome"]) ?>">
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#petFotosCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#petFotosCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>
+                </div>
+            <?php else: ?>
+                <img src="<?= htmlspecialchars($foto) ?>" class="img-fluid shadow-sm w-100" style="height: 520px; object-fit: cover; border-radius: 18px;" alt="<?= htmlspecialchars($pet["Nome"]) ?>">
+            <?php endif; ?>
         </div>
 
         <div class="col-lg-6">
@@ -114,13 +142,9 @@ if (usuarioAdotante()) {
                             Candidatura enviada
                         </button>
                     <?php elseif ($podeSolicitarAdocao): ?>
-                        <form method="POST" class="m-0">
-                            <input type="hidden" name="acao" value="adotar">
-                            <input type="hidden" name="animal_id" value="<?= (int) $pet["Id_animal"] ?>">
-                            <button type="submit" class="btn btn-dark btn-lg w-100" style="border-radius: 12px;">
-                                Quero me candidatar
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-dark btn-lg w-100" style="border-radius: 12px;" data-bs-toggle="modal" data-bs-target="#confirmarCandidatura">
+                            Quero me candidatar
+                        </button>
                     <?php else: ?>
                         <button type="button" class="btn btn-secondary btn-lg w-100" style="border-radius: 12px;" disabled>
                             Este pet nao esta disponivel
@@ -164,3 +188,27 @@ if (usuarioAdotante()) {
         <?php endif; ?>
     </div>
 </div>
+
+<?php if (usuarioAdotante() && !$solicitacaoAtual && $podeSolicitarAdocao): ?>
+    <div class="modal fade" id="confirmarCandidatura" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="border-radius: 16px;">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Confirmar candidatura</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    Deseja se candidatar para adotar <?= htmlspecialchars($pet["Nome"]) ?>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button>
+                    <form method="POST" class="m-0">
+                        <input type="hidden" name="acao" value="adotar">
+                        <input type="hidden" name="animal_id" value="<?= (int) $pet["Id_animal"] ?>">
+                        <button type="submit" class="btn btn-dark">Confirmar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>

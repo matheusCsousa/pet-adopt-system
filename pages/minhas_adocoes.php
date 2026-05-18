@@ -57,9 +57,11 @@ $solicitacoes = $adocaoGateway->getByAdotanteWithDetails($_SESSION["usuario_id"]
     <div class="row g-4">
         <?php foreach ($solicitacoes as $solicitacao): ?>
             <?php
-                $foto = !empty($solicitacao["foto_principal"])
-                    ? $solicitacao["foto_principal"]
-                    : "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=500&q=80";
+                $foto = !empty($solicitacao["foto_principal_id"])
+                    ? "foto.php?id=" . (int) $solicitacao["foto_principal_id"]
+                    : (!empty($solicitacao["foto_principal"])
+                        ? $solicitacao["foto_principal"]
+                        : "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=500&q=80");
             ?>
             <div class="col-md-6">
                 <div class="bg-white shadow-sm h-100" style="border-radius: 18px; overflow: hidden;">

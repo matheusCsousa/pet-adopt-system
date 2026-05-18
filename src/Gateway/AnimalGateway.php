@@ -10,17 +10,31 @@ class AnimalGateway {
     }
 
     public function getAll() {
-        $sql = "SELECT a.*, f.URL_foto as foto_principal
+        $sql = "SELECT a.*, f.Id_foto as foto_principal_id, f.URL_foto as foto_principal,
+                       ab.Nome as abrigo_nome
                 FROM Animal a
-                LEFT JOIN Foto f ON a.Id_animal = f.fk_Animal_Id_animal AND f.Is_principal = 1";
+                LEFT JOIN Foto f ON a.Id_animal = f.fk_Animal_Id_animal AND f.Is_principal = 1
+                LEFT JOIN Abrigo ab ON a.fk_Abrigo_Id_abrigo = ab.Id_abrigo
+                ORDER BY a.Data_entrada DESC, a.Id_animal DESC";
         return $this->db->fetchAll($sql);
     }
 
     public function getAvailableForAdoption() {
-        $sql = "SELECT a.*, f.URL_foto as foto_principal
+        $sql = "SELECT a.*, f.Id_foto as foto_principal_id, f.URL_foto as foto_principal
                 FROM Animal a
                 LEFT JOIN Foto f ON a.Id_animal = f.fk_Animal_Id_animal AND f.Is_principal = 1
                 WHERE a.Status IN ('Disponivel', 'Em_adocao')
+                ORDER BY a.Data_entrada DESC, a.Id_animal DESC";
+        return $this->db->fetchAll($sql);
+    }
+
+    public function getNotAnnounced() {
+        $sql = "SELECT a.*, f.Id_foto as foto_principal_id, f.URL_foto as foto_principal,
+                       ab.Nome as abrigo_nome
+                FROM Animal a
+                LEFT JOIN Foto f ON a.Id_animal = f.fk_Animal_Id_animal AND f.Is_principal = 1
+                LEFT JOIN Abrigo ab ON a.fk_Abrigo_Id_abrigo = ab.Id_abrigo
+                WHERE a.Status IN ('Cadastrado', 'Em_tratamento')
                 ORDER BY a.Data_entrada DESC, a.Id_animal DESC";
         return $this->db->fetchAll($sql);
     }
@@ -31,7 +45,7 @@ class AnimalGateway {
     }
 
     public function getDetailsById($id) {
-        $sql = "SELECT a.*, f.URL_foto as foto_principal, ab.Nome as abrigo_nome,
+        $sql = "SELECT a.*, f.Id_foto as foto_principal_id, f.URL_foto as foto_principal, ab.Nome as abrigo_nome,
                        ab.Endereco as abrigo_endereco, ab.Telefone as abrigo_telefone
                 FROM Animal a
                 LEFT JOIN Foto f ON a.Id_animal = f.fk_Animal_Id_animal AND f.Is_principal = 1
@@ -59,7 +73,7 @@ class AnimalGateway {
             'especie' => $data['especie'],
             'sexo' => $data['sexo'],
             'porte' => $data['porte'],
-            'status' => $data['status'] ?? 'Disponivel',
+            'status' => $data['status'] ?? 'Cadastrado',
             'data_entrada' => $data['data_entrada'] ?? date('Y-m-d'),
             'fk_abrigo' => $data['fk_abrigo']
         ]);
@@ -78,6 +92,32 @@ class AnimalGateway {
 
         $sql = "UPDATE Animal SET " . implode(', ', $fields) . " WHERE Id_animal = :id";
         return $this->db->query($sql, $params);
+    }
+
+    public function announce($id) {
+        $sql = "UPDATE Animal
+                SET Status = 'Disponivel'
+                WHERE Id_animal = ?
+                  AND Status IN ('Cadastrado', 'Em_tratamento')";
+        return $this->db->query($sql, [$id]);
+    }
+
+    public function removeAnnouncement($id) {
+        $this->db->query(
+            "UPDATE Adocao
+             SET Status = 'Cancelada',
+                 Descricao = 'O anuncio deste pet foi removido pela ONG.',
+                 Data_conclusao = CURDATE()
+             WHERE fk_Animal_Id_animal = ?
+               AND Status = 'Pendente'",
+            [$id]
+        );
+
+        $sql = "UPDATE Animal
+                SET Status = 'Cadastrado'
+                WHERE Id_animal = ?
+                  AND Status IN ('Disponivel', 'Em_adocao')";
+        return $this->db->query($sql, [$id]);
     }
 
     public function delete($id) {

@@ -127,6 +127,8 @@
             <?php if (isset($_SESSION['usuario_id'])): ?>
                 <?php if (($_SESSION["usuario_tipo"] ?? "") === "funcionario"): ?>
                     <a class="nav-link fw-bold text-dark" href="?page=cadastrar_pet">Cadastrar</a>
+                    <a class="nav-link fw-bold text-dark" href="?page=anunciar_pet">Anunciar</a>
+                    <a class="nav-link fw-bold text-dark" href="?page=gerenciar_pets">Gerenciar</a>
                     <a class="nav-link fw-bold text-dark" href="?page=validar_adocoes">Validar</a>
                 <?php elseif (($_SESSION["usuario_tipo"] ?? "") === "adotante"): ?>
                     <a class="nav-link fw-bold text-dark" href="?page=minhas_adocoes">Minhas candidaturas</a>

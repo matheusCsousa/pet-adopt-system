@@ -6,7 +6,7 @@ require_once "src/auth.php";
 
 $page = $_GET["page"] ?? "home";
 
-$allowed = ["home", "login", "cadastro", "perfil", "minhas_adocoes", "cadastrar_pet", "logout", "listar_pets", "detalhes_pet", "validar_adocoes"];
+$allowed = ["home", "login", "cadastro", "perfil", "minhas_adocoes", "cadastrar_pet", "anunciar_pet", "gerenciar_pets", "logout", "listar_pets", "detalhes_pet", "validar_adocoes"];
 if (!in_array($page, $allowed)) {
     $page = "home";
 }

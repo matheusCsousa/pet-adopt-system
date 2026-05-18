@@ -32,7 +32,8 @@ class AdocaoGateway {
 
     public function getByAdotanteWithDetails($adotanteId, $status = "") {
         $sql = "SELECT ad.*, a.Nome as animal_nome, a.Especie, a.Raca,
-                       a.Status as animal_status, f.URL_foto as foto_principal
+                       a.Status as animal_status, f.Id_foto as foto_principal_id,
+                       f.URL_foto as foto_principal
                 FROM Adocao ad
                 INNER JOIN Animal a ON ad.fk_Animal_Id_animal = a.Id_animal
                 LEFT JOIN Foto f ON a.Id_animal = f.fk_Animal_Id_animal AND f.Is_principal = 1
